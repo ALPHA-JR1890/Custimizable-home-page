@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Page</title>
+    <!-- Add favicon -->
+    <link rel="icon" type="image/png" href="https://cdn.bio.link/uploads/profile_pictures/2025-04-23/KIyjnGulLHDzGoQ4C7CxfjLZ15tSoAAO.png">
+
+    <!-- Include Quicksand Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: #eaeaea; /* Default if no image yet */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            transition: background-image 0.4s;
+        }
+        iframe {
+            border: none;
+            width: 200px; /* Full width for iframe */
+            flex: 1;
+        }
+        #countdown {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #f0f8ff;
+            border: 2px solid #3498db;
+            border-radius: 15px;
+            padding: 10px 20px;
+            font-family: 'Quicksand', Arial, sans-serif;
+            font-size: 14px;
+            color: #333;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            text-align: center;
+        }
+        #things-to-do {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            width: 200px;
+            height: 200px;
+            background-color: #ffffff;
+            border: 2px solid #3498db;
+            border-radius: 10px;
+            padding: 10px;
+            font-family: 'Quicksand', Arial, sans-serif;
+            font-size: 14px;
+            color: #333;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            resize: none;
+            z-index: 1000;
+        }
+        #event-countdowns {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 250px;
+            background-color: #f8f9fa;
+            border: 2px solid #e67e22;
+            border-radius: 15px;
+            padding: 16px 18px;
+            font-family: 'Quicksand', Arial, sans-serif;
+            font-size: 15px;
+            color: #333;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.08);
+            z-index: 1000;
+        }
+        #event-countdowns h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: #e67e22;
+        }
+        #event-countdowns ul {
+            list-style-type: none;
+            padding-left: 0;
+            margin: 0;
+        }
+        #event-countdowns li {
+            margin-bottom: 8px;
+        }
+        /* Popup */
+        #bgPopup {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        #bgPopupContent {
+            background: #fff;
+            padding: 22px 30px 18px 30px;
+            border-radius: 18px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+            text-align: center;
+            min-width: 280px;
+        }
+        #bgPopupContent input[type="text"] {
+            width: 95%;
+            padding: 8px;
+            border: 1.5px solid #3498db;
+            border-radius: 8px;
+            font-size: 15px;
+            margin-bottom: 14px;
+        }
+        #bgPopupContent button {
+            background: #3498db;
+            border: none;
+            color: white;
+            padding: 8px 24px;
+            border-radius: 8px;
+            font-size: 15px;
+            cursor: pointer;
+            margin-right: 8px;
+        }
+        #bgPopupContent button:last-child {
+            background: #e74c3c;
+        }
+        #change-background-button {
+            position: fixed;
+            left: 20px;
+            top: 20px;
+            z-index: 1100;
+            padding: 10px 16px;
+            border-radius: 8px;
+            background: #f6f6f6;
+            border: 2px solid #3498db;
+            font-family: 'Quicksand', Arial, sans-serif;
+            font-size: 13px;
+            color: #3498db;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #change-background-button:hover {
+            background: #eaf6fb;
+        }
+    </style>
+</head>
+<body>
+    <!-- Button to change background -->
+    <button id="change-background-button" title="Change background">🖼️ Change Background</button>
+
+    <!-- Popup for entering image link -->
+    <div id="bgPopup" style="display:none;">
+        <div id="bgPopupContent">
+            <h3>Choose Background Image</h3>
+            <input type="text" id="bgUrlInput" placeholder="Enter image link here..." />
+            <br>
+            <button id="bgUrlSet">Set</button>
+            <button id="bgUrlCancel">Cancel</button>
+            <div id="bgUrlError" style="color: red; font-size:12px; margin-top:10px;"></div>
+        </div>
+    </div>
+
+    <!-- Live Date/Time -->
+    <div id="countdown">Loading...</div>
+    <!-- Editable "Things to do" Text Box -->
+    <textarea id="things-to-do" placeholder="Things to do..."></textarea>
+    <!-- Embed bio.link -->
+    <iframe 
+        class="bio-link" 
+        src="https://bio.link/alpha_jr" 
+        title="Bio Link">
+    </iframe>
+    <!-- Custom countdowns -->
+    <div id="event-countdowns">
+        <h3>Upcoming Events</h3>
+        <ul>
+            <li id="christmas-countdown"></li>
+            <li id="birthday-countdown"></li>
+            <li id="schoolend-countdown"></li>
+        </ul>
+    </div>
+    <script>
+        // Live date/time
+        function startClock() {
+            const clockElement = document.getElementById('countdown');
+            function updateClock() {
+                const now = new Date();
+                const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                const formattedDate = now.toLocaleDateString('en-US', dateOptions);
+                const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
+                const formattedTime = now.toLocaleTimeString('en-US', timeOptions);
+                clockElement.innerHTML = `${formattedDate}<br>${formattedTime}`;
+            }
+            setInterval(updateClock, 1000);
+            updateClock();
+        }
+        startClock();
+
+        // "Things to do" localStorage
+        const thingsToDoBox = document.getElementById('things-to-do');
+        thingsToDoBox.value = localStorage.getItem('thingsToDo') || '';
+        thingsToDoBox.addEventListener('input', () => {
+            localStorage.setItem('thingsToDo', thingsToDoBox.value);
+        });
+
+        // Custom countdowns
+        function updateEventCountdowns() {
+            const now = new Date();
+
+            // Christmas (December 25, next if already passed this year)
+            const year = now.getMonth() > 11 || (now.getMonth() === 11 && now.getDate() > 25) ? now.getFullYear() + 1 : now.getFullYear();
+            let christmas = new Date(year, 11, 25, 0, 0, 0); // December is month 11
+
+            // Birthday (April 24, next if already passed)
+            let birthdayYear = now.getMonth() > 3 || (now.getMonth() === 3 && now.getDate() > 24) ? now.getFullYear() + 1 : now.getFullYear();
+            let birthday = new Date(birthdayYear, 3, 24, 0, 0, 0); // April is month 3
+
+            // End of School (May 21, next if already passed)
+            let schoolEndYear = now.getMonth() > 4 || (now.getMonth() === 4 && now.getDate() > 21) ? now.getFullYear() + 1 : now.getFullYear();
+            let schoolEnd = new Date(schoolEndYear, 4, 21, 0, 0, 0); // May is month 4
+
+            function getCountdownText(targetDate) {
+                let diff = targetDate - now;
+                if (diff < 0) return "Passed!";
+                let days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                let hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+                let mins = Math.floor((diff / (1000 * 60)) % 60);
+                let secs = Math.floor((diff / 1000) % 60);
+                return `${days} days, ${hours} hours, ${mins} mins, ${secs} secs`;
+            }
+
+            document.getElementById('christmas-countdown').innerHTML = `<strong>🎄 Christmas :</strong> ${getCountdownText(christmas)}`;
+            document.getElementById('birthday-countdown').innerHTML = `<strong>🎂 My Birthday :</strong> ${getCountdownText(birthday)}`;
+            document.getElementById('schoolend-countdown').innerHTML = `<strong>🏫 End of School :</strong> ${getCountdownText(schoolEnd)}`;
+        }
+
+        setInterval(updateEventCountdowns, 1000);
+        updateEventCountdowns();
+
+        // --- Popup for background image ---
+        const bgPopup = document.getElementById('bgPopup');
+        const bgUrlInput = document.getElementById('bgUrlInput');
+        const bgUrlSet = document.getElementById('bgUrlSet');
+        const bgUrlCancel = document.getElementById('bgUrlCancel');
+        const bgUrlError = document.getElementById('bgUrlError');
+        const changeBackgroundButton = document.getElementById('change-background-button');
+
+        function showBgPopup(defaultUrl = '') {
+            bgUrlInput.value = defaultUrl;
+            bgUrlError.textContent = '';
+            bgPopup.style.display = "flex";
+            bgUrlInput.focus();
+        }
+        function hideBgPopup() {
+            bgPopup.style.display = "none";
+        }
+
+        // Show popup on load if no background set
+        window.addEventListener('DOMContentLoaded', () => {
+            let bg = localStorage.getItem('customBgImg');
+            if (!bg) {
+                showBgPopup('');
+            } else {
+                document.body.style.backgroundImage = `url('${bg}')`;
+            }
+        });
+
+        // Show popup on button click
+        changeBackgroundButton.addEventListener('click', () => {
+            showBgPopup(localStorage.getItem('customBgImg') || '');
+        });
+
+        // Cancel popup
+        bgUrlCancel.addEventListener('click', hideBgPopup);
+
+        // Set background on Set button (relaxed validation)
+        bgUrlSet.addEventListener('click', () => {
+            let url = bgUrlInput.value.trim();
+            if (!url) {
+                bgUrlError.textContent = 'Please enter an image link!';
+                return;
+            }
+            if (!/^https?:\/\/.+/.test(url)) {
+                bgUrlError.textContent = 'Please enter a valid URL starting with http or https';
+                return;
+            }
+            // Try to set the background image
+            document.body.style.backgroundImage = `url('${url}')`;
+            localStorage.setItem('customBgImg', url);
+            hideBgPopup();
+        });
+
+        // Allow Enter to set background
+        bgUrlInput.addEventListener('keydown', function(e){
+            if(e.key === 'Enter') {
+                bgUrlSet.click();
+            }
+        });
+    </script>
+</body>
+</html>
