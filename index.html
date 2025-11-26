@@ -55,7 +55,7 @@
         background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 3000;}
         #bgPopupContent, #birthdayPopupContent, #eventPopupContent, #welcomePopupContent { background: #fff; padding: 22px 30px 18px 30px; border-radius: 18px;
         box-shadow: 0 4px 24px rgba(0,0,0,0.18); text-align: center; min-width: 280px;}
-        #bgPopupContent input[type="text"], #birthdayPopupContent select, #eventPopupContent input[type="text"], #eventPopupContent input[type="date"] { width: 95%; padding: 8px; border: 1.5px solid #3498db;
+        #bgPopupContent input[type="text"], #birthdayPopupContent select, #eventPopupContent input[type="text"], #eventPopupContent input[type="date"] { width: 95%; padding: 8px; border: 1.5px solid #[...]
         border-radius: 8px; font-size: 15px; margin-bottom: 14px;}
         #bgPopupContent button, #birthdayPopupContent button, #eventPopupContent button, #welcomePopupContent button { background: #3498db; border: none; color: white; padding: 8px 24px;
         border-radius: 8px; font-size: 15px; cursor: pointer; margin-right: 8px;}
@@ -138,6 +138,14 @@
         <ul id="holiday-events"></ul>
     </div>
     <script>
+        // Restore background from localStorage on page load
+        (function() {
+            const bgImg = localStorage.getItem('customBgImg');
+            if(bgImg) {
+                document.body.style.backgroundImage = `url('${bgImg}')`;
+            }
+        })();
+
         function getUSHolidays(year) {
             const holidays = [
                 { name: "🎄 Christmas Day", date: new Date(year, 11, 25) },
@@ -243,13 +251,29 @@
         // -- CUSTOM EVENT STORAGE (in localStorage) --
         function getCustomEvents() {
             try {
-                return JSON.parse(localStorage.getItem('customEvents') || '[]');
+                const arr = JSON.parse(localStorage.getItem('customEvents') || '[]');
+                // Filter out passed events (no recurrence): remove those in the past
+                const today = new Date();
+                today.setHours(0,0,0,0); // only compare day
+                const filtered = arr.filter(ev => {
+                    // Start of day comparison
+                    const evDate = new Date(ev.date + 'T00:00:00');
+                    return evDate >= today;
+                });
+                if (filtered.length !== arr.length) localStorage.setItem('customEvents', JSON.stringify(filtered));
+                return filtered;
             } catch { return []; }
         }
         function addCustomEvent(name, dateStr) {
             let evts = getCustomEvents();
             evts.push({ name, date: dateStr });
             localStorage.setItem('customEvents', JSON.stringify(evts));
+        }
+        function removeCustomEvent(idx) {
+            let evts = getCustomEvents();
+            evts.splice(idx, 1);
+            localStorage.setItem('customEvents', JSON.stringify(evts));
+            updateHolidayCountdowns();
         }
 
         function updateHolidayCountdowns() {
@@ -272,16 +296,24 @@
                 li.innerHTML = `<strong>🎂 My Birthday :</strong> ${countdown}`;
                 eventsElem.appendChild(li);
             }
-            // Show all custom user events as countdowns
+            // Show custom user events as countdowns, with delete icon
             const customEvents = getCustomEvents();
-            for (let ev of customEvents) {
+            customEvents.forEach((ev, i) => {
                 let evDate = new Date(ev.date + 'T00:00:00');
-                if (isNaN(evDate.getTime())) continue;
+                if (isNaN(evDate.getTime())) return;
                 let countdown = getCountdownText(evDate, now);
                 let li = document.createElement('li');
-                li.innerHTML = `<strong>📅 ${ev.name} :</strong> ${countdown}`;
+                li.innerHTML =
+                    `<strong>📅 ${ev.name} :</strong> ${countdown} <button style="margin-left:5px;font-size:14px;" data-del-idx="${i}" title="Delete event">🗑</button>`;
                 eventsElem.appendChild(li);
-            }
+            });
+            // Attach delete handler for custom events
+            eventsElem.querySelectorAll("button[data-del-idx]").forEach(btn => {
+                btn.onclick = function() {
+                    const idx = parseInt(btn.getAttribute("data-del-idx"));
+                    removeCustomEvent(idx);
+                };
+            });
         }
         function getCountdownText(targetDate, currentDate = null) {
             const now = currentDate || new Date();
@@ -375,7 +407,7 @@
         // Main menu for "Upcoming Events"
         eventMenuButton.addEventListener('click', function() {
             let menu = prompt(
-                "Type:\n1 for Change Background\n2 for Set Birthday\n3 for Add Event",
+                "Type:\n1 for Change Background\n2 for Set Birthday\n3 for Add Event\n4 for Delete Event",
                 "1"
             );
             if (menu == "1") {
@@ -384,6 +416,22 @@
                 showBirthdayPopup();
             } else if (menu == "3") {
                 showEventPopup();
+            } else if (menu == "4") {
+                const customEvents = getCustomEvents();
+                if (!customEvents.length) {
+                    alert("No custom events to delete.");
+                    return;
+                }
+                let listMsg = "Select the event number to delete:\n";
+                customEvents.forEach((ev, i) => {
+                    listMsg += `${i+1}. ${ev.name} (${ev.date})\n`;
+                });
+                let choice = prompt(listMsg, "1");
+                let idx = parseInt(choice) - 1;
+                if (!isNaN(idx) && idx >= 0 && idx < customEvents.length) {
+                    if (confirm(`Delete event "${customEvents[idx].name}"?`))
+                        removeCustomEvent(idx);
+                }
             }
         });
 
