@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home Page</title>
-    <!-- Add favicon -->
-    <link rel="icon" type="image/png" href="https://cdn.bio.link/uploads/profile_pictures/2025-04-23/KIyjnGulLHDzGoQ4C7CxfjLZ15tSoAAO.png">
+    <link rel="icon" type="image/png" href="https://cdn.bio.link/uploads/profilealso_pictures/2025-04-23/KIyjnGulLHDzGoQ4C7CxfjLZ15tSoAAO.png">
 
     <!-- Include Quicksand Font -->
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;700&display=swap" rel="stylesheet">
@@ -17,7 +16,7 @@
             height: 100vh;
             display: flex;
             flex-direction: column;
-            background: #eaeaea; /* Default if no image yet */
+            background: #eaeaea;
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -25,7 +24,7 @@
         }
         iframe {
             border: none;
-            width: 200px; /* Full width for iframe */
+            width: 200px;
             flex: 1;
         }
         #countdown {
@@ -88,8 +87,7 @@
         #event-countdowns li {
             margin-bottom: 8px;
         }
-        /* Popup */
-        #bgPopup {
+        #bgPopup, #birthdayPopup {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.5);
@@ -98,7 +96,7 @@
             justify-content: center;
             z-index: 2000;
         }
-        #bgPopupContent {
+        #bgPopupContent, #birthdayPopupContent {
             background: #fff;
             padding: 22px 30px 18px 30px;
             border-radius: 18px;
@@ -106,7 +104,7 @@
             text-align: center;
             min-width: 280px;
         }
-        #bgPopupContent input[type="text"] {
+        #bgPopupContent input[type="text"], #birthdayPopupContent select {
             width: 95%;
             padding: 8px;
             border: 1.5px solid #3498db;
@@ -114,7 +112,7 @@
             font-size: 15px;
             margin-bottom: 14px;
         }
-        #bgPopupContent button {
+        #bgPopupContent button, #birthdayPopupContent button {
             background: #3498db;
             border: none;
             color: white;
@@ -124,12 +122,12 @@
             cursor: pointer;
             margin-right: 8px;
         }
-        #bgPopupContent button:last-child {
+        #bgPopupContent button:last-child, #birthdayPopupContent button:last-child {
             background: #e74c3c;
         }
         #change-background-button {
             position: fixed;
-            left: 20px;
+            left: 0px;
             top: 20px;
             z-index: 1100;
             padding: 10px 16px;
@@ -163,17 +161,40 @@
         </div>
     </div>
 
+    <!-- Popup for entering birthday MONTH and DAY only -->
+    <div id="birthdayPopup" style="display:none;">
+        <div id="birthdayPopupContent">
+            <h3>Enter Your Birthday</h3>
+            <select id="monthInput">
+                <option value="">Month</option>
+                <option value="1">January</option>
+                <option value="2">February</option>
+                <option value="3">March</option>
+                <option value="4">April</option>
+                <option value="5">May</option>
+                <option value="6">June</option>
+                <option value="7">July</option>
+                <option value="8">August</option>
+                <option value="9">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
+            </select>
+            <select id="dayInput">
+                <option value="">Day</option>
+                <!-- Dynamically populate day options for 1-31 below -->
+            </select>
+            <br>
+            <button id="birthdaySet">Set</button>
+            <button id="birthdayCancel">Skip</button>
+            <div id="birthdayError" style="color: red; font-size:12px; margin-top:10px;"></div>
+        </div>
+    </div>
+
     <!-- Live Date/Time -->
     <div id="countdown">Loading...</div>
-    <!-- Editable "Things to do" Text Box -->
     <textarea id="things-to-do" placeholder="Things to do..."></textarea>
-    <!-- Embed bio.link -->
-    <iframe 
-        class="bio-link" 
-        src="https://bio.link/alpha_jr" 
-        title="Bio Link">
-    </iframe>
-    <!-- Custom countdowns -->
+    <iframe class="bio-link" src="https://bio.link/alpha_jr" title="Bio Link"></iframe>
     <div id="event-countdowns">
         <h3>Upcoming Events</h3>
         <ul>
@@ -183,7 +204,185 @@
         </ul>
     </div>
     <script>
-        // Live date/time
+        // Populate dayInput options
+        const dayInput = document.getElementById('dayInput');
+        for(let d=1; d<=31; d++){
+            const opt = document.createElement('option');
+            opt.value = d;
+            opt.textContent = d;
+            dayInput.appendChild(opt);
+        }
+
+        // Save "Things to Do" text locally
+        const thingsToDoBox = document.getElementById('things-to-do');
+        thingsToDoBox.value = localStorage.getItem('thingsToDo') || '';
+        thingsToDoBox.addEventListener('input', () => {
+            localStorage.setItem('thingsToDo', thingsToDoBox.value);
+        });
+
+        // Get the user's birthday from localStorage, or blank/null if not set
+        function getUserBirthday() {
+            let stored = localStorage.getItem('userBirthdayMMDD');
+            if (stored) {
+                let parts = stored.split('-');
+                let month = parseInt(parts[0]);
+                let day = parseInt(parts[1]);
+                if(!isNaN(month) && !isNaN(day)) {
+                    return {month, day};
+                }
+            }
+            return null; // not set, so blank
+        }
+
+        // Custom countdowns
+        function updateEventCountdowns() {
+            const now = new Date();
+            // Christmas countdown
+            const year = now.getMonth() > 11 || (now.getMonth() === 11 && now.getDate() > 25) ? now.getFullYear() + 1 : now.getFullYear();
+            let christmas = new Date(year, 11, 25, 0, 0, 0);
+
+            // Birthday - only show if set
+            let bday = getUserBirthday();
+            let birthdayText = "";
+            if (bday) {
+                // Next occurrence
+                let birthdayYear = (now.getMonth()+1 > bday.month) || (now.getMonth()+1 === bday.month && now.getDate() > bday.day) ? now.getFullYear() + 1 : now.getFullYear();
+                let birthdayDate = new Date(birthdayYear, bday.month-1, bday.day, 0, 0, 0);
+                birthdayText = `<strong>🎂 My Birthday :</strong> ${getCountdownText(birthdayDate)}`;
+            } // Else, stays blank
+
+            // End of School
+            let schoolEndYear = now.getMonth() > 4 || (now.getMonth() === 4 && now.getDate() > 21) ? now.getFullYear() + 1 : now.getFullYear();
+            let schoolEnd = new Date(schoolEndYear, 4, 21, 0, 0, 0);
+
+            document.getElementById('christmas-countdown').innerHTML = `<strong>🎄 Christmas :</strong> ${getCountdownText(christmas)}`;
+            document.getElementById('birthday-countdown').innerHTML = birthdayText;
+            document.getElementById('schoolend-countdown').innerHTML = `<strong>🏫 End of School :</strong> ${getCountdownText(schoolEnd)}`;
+        }
+
+        function getCountdownText(targetDate) {
+            const now = new Date();
+            let diff = targetDate - now;
+            if (diff < 0) return "Passed!";
+            let days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            let hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+            let mins = Math.floor((diff / (1000 * 60)) % 60);
+            let secs = Math.floor((diff / 1000) % 60);
+            return `${days} days, ${hours} hours, ${mins} mins, ${secs} secs`;
+        }
+
+        setInterval(updateEventCountdowns, 1000);
+        updateEventCountdowns();
+
+        // Popup controls for background and birthday
+        const bgPopup = document.getElementById('bgPopup');
+        const bgUrlInput = document.getElementById('bgUrlInput');
+        const bgUrlSet = document.getElementById('bgUrlSet');
+        const bgUrlCancel = document.getElementById('bgUrlCancel');
+        const bgUrlError = document.getElementById('bgUrlError');
+        const changeBackgroundButton = document.getElementById('change-background-button');
+        const birthdayPopup = document.getElementById('birthdayPopup');
+        const monthInput = document.getElementById('monthInput');
+        const birthdaySet = document.getElementById('birthdaySet');
+        const birthdayCancel = document.getElementById('birthdayCancel');
+        const birthdayError = document.getElementById('birthdayError');
+
+        function showBgPopup(defaultUrl = '') {
+            bgUrlInput.value = defaultUrl;
+            bgUrlError.textContent = '';
+            bgPopup.style.display = "flex";
+            bgUrlInput.focus();
+        }
+        function hideBgPopup() {
+            bgPopup.style.display = "none";
+        }
+        function showBirthdayPopup() {
+            // Set dropdowns to stored value or blank
+            let raw = localStorage.getItem('userBirthdayMMDD');
+            if (raw) {
+                let parts = raw.split('-');
+                if(parts.length === 2) {
+                    monthInput.value = parts[0];
+                    dayInput.value = parts[1];
+                }
+            } else {
+                monthInput.value = "";
+                dayInput.value = "";
+            }
+            birthdayError.textContent = '';
+            birthdayPopup.style.display = "flex";
+            monthInput.focus();
+        }
+        function hideBirthdayPopup() {
+            birthdayPopup.style.display = "none";
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            let bg = localStorage.getItem('customBgImg');
+            let bday = localStorage.getItem('userBirthdayMMDD');
+            if (!bg) {
+                showBgPopup('');
+            } else {
+                document.body.style.backgroundImage = `url('${bg}')`;
+                if (!bday) showBirthdayPopup();
+            }
+        });
+
+        changeBackgroundButton.addEventListener('click', () => {
+            showBgPopup(localStorage.getItem('customBgImg') || '');
+        });
+        bgUrlCancel.addEventListener('click', hideBgPopup);
+
+        bgUrlSet.addEventListener('click', () => {
+            let url = bgUrlInput.value.trim();
+            if (!url) {
+                bgUrlError.textContent = 'Please enter an image link!';
+                return;
+            }
+            if (!/^https?:\/\/.+/.test(url)) {
+                bgUrlError.textContent = 'Please enter a valid URL starting with http or https';
+                return;
+            }
+            document.body.style.backgroundImage = `url('${url}')`;
+            localStorage.setItem('customBgImg', url);
+            hideBgPopup();
+            showBirthdayPopup();
+        });
+
+        bgUrlInput.addEventListener('keydown', function(e){
+            if(e.key === 'Enter') {
+                bgUrlSet.click();
+            }
+        });
+
+        birthdaySet.addEventListener('click', () => {
+            if (!monthInput.value || !dayInput.value) {
+                birthdayError.textContent = 'Please select both month and day!';
+                return;
+            }
+            let mmdd = `${monthInput.value}-${dayInput.value}`;
+            localStorage.setItem('userBirthdayMMDD', mmdd);
+            hideBirthdayPopup();
+            updateEventCountdowns();
+        });
+        birthdayCancel.addEventListener('click', () => {
+            localStorage.removeItem('userBirthdayMMDD'); // clear!
+            hideBirthdayPopup();
+            updateEventCountdowns();
+        });
+
+        monthInput.addEventListener('keydown', function(e){
+            if(e.key === 'Enter') {
+                birthdaySet.click();
+            }
+        });
+        dayInput.addEventListener('keydown', function(e){
+            if(e.key === 'Enter') {
+                birthdaySet.click();
+            }
+        });
+
+        // Live date/time for top clock
         function startClock() {
             const clockElement = document.getElementById('countdown');
             function updateClock() {
@@ -198,107 +397,6 @@
             updateClock();
         }
         startClock();
-
-        // "Things to do" localStorage
-        const thingsToDoBox = document.getElementById('things-to-do');
-        thingsToDoBox.value = localStorage.getItem('thingsToDo') || '';
-        thingsToDoBox.addEventListener('input', () => {
-            localStorage.setItem('thingsToDo', thingsToDoBox.value);
-        });
-
-        // Custom countdowns
-        function updateEventCountdowns() {
-            const now = new Date();
-
-            // Christmas (December 25, next if already passed this year)
-            const year = now.getMonth() > 11 || (now.getMonth() === 11 && now.getDate() > 25) ? now.getFullYear() + 1 : now.getFullYear();
-            let christmas = new Date(year, 11, 25, 0, 0, 0); // December is month 11
-
-            // Birthday (April 24, next if already passed)
-            let birthdayYear = now.getMonth() > 3 || (now.getMonth() === 3 && now.getDate() > 24) ? now.getFullYear() + 1 : now.getFullYear();
-            let birthday = new Date(birthdayYear, 3, 24, 0, 0, 0); // April is month 3
-
-            // End of School (May 21, next if already passed)
-            let schoolEndYear = now.getMonth() > 4 || (now.getMonth() === 4 && now.getDate() > 21) ? now.getFullYear() + 1 : now.getFullYear();
-            let schoolEnd = new Date(schoolEndYear, 4, 21, 0, 0, 0); // May is month 4
-
-            function getCountdownText(targetDate) {
-                let diff = targetDate - now;
-                if (diff < 0) return "Passed!";
-                let days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                let hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-                let mins = Math.floor((diff / (1000 * 60)) % 60);
-                let secs = Math.floor((diff / 1000) % 60);
-                return `${days} days, ${hours} hours, ${mins} mins, ${secs} secs`;
-            }
-
-            document.getElementById('christmas-countdown').innerHTML = `<strong>🎄 Christmas :</strong> ${getCountdownText(christmas)}`;
-            document.getElementById('birthday-countdown').innerHTML = `<strong>🎂 My Birthday :</strong> ${getCountdownText(birthday)}`;
-            document.getElementById('schoolend-countdown').innerHTML = `<strong>🏫 End of School :</strong> ${getCountdownText(schoolEnd)}`;
-        }
-
-        setInterval(updateEventCountdowns, 1000);
-        updateEventCountdowns();
-
-        // --- Popup for background image ---
-        const bgPopup = document.getElementById('bgPopup');
-        const bgUrlInput = document.getElementById('bgUrlInput');
-        const bgUrlSet = document.getElementById('bgUrlSet');
-        const bgUrlCancel = document.getElementById('bgUrlCancel');
-        const bgUrlError = document.getElementById('bgUrlError');
-        const changeBackgroundButton = document.getElementById('change-background-button');
-
-        function showBgPopup(defaultUrl = '') {
-            bgUrlInput.value = defaultUrl;
-            bgUrlError.textContent = '';
-            bgPopup.style.display = "flex";
-            bgUrlInput.focus();
-        }
-        function hideBgPopup() {
-            bgPopup.style.display = "none";
-        }
-
-        // Show popup on load if no background set
-        window.addEventListener('DOMContentLoaded', () => {
-            let bg = localStorage.getItem('customBgImg');
-            if (!bg) {
-                showBgPopup('');
-            } else {
-                document.body.style.backgroundImage = `url('${bg}')`;
-            }
-        });
-
-        // Show popup on button click
-        changeBackgroundButton.addEventListener('click', () => {
-            showBgPopup(localStorage.getItem('customBgImg') || '');
-        });
-
-        // Cancel popup
-        bgUrlCancel.addEventListener('click', hideBgPopup);
-
-        // Set background on Set button (relaxed validation)
-        bgUrlSet.addEventListener('click', () => {
-            let url = bgUrlInput.value.trim();
-            if (!url) {
-                bgUrlError.textContent = 'Please enter an image link!';
-                return;
-            }
-            if (!/^https?:\/\/.+/.test(url)) {
-                bgUrlError.textContent = 'Please enter a valid URL starting with http or https';
-                return;
-            }
-            // Try to set the background image
-            document.body.style.backgroundImage = `url('${url}')`;
-            localStorage.setItem('customBgImg', url);
-            hideBgPopup();
-        });
-
-        // Allow Enter to set background
-        bgUrlInput.addEventListener('keydown', function(e){
-            if(e.key === 'Enter') {
-                bgUrlSet.click();
-            }
-        });
     </script>
 </body>
 </html>
